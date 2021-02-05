@@ -6,15 +6,13 @@ const SHA256 = require('crypto-js/sha256')
 class Block {
     /**
      * Class constructor.
-     * @param {*} index Optional. Indicates where the block is situated in the chain
      * @param {*} timestamp Indicates when the block was created
-     * @param {*} data Data inside the block
+     * @param {*} transactions List of transactions contained inside the block
      * @param {*} previousHash Hash of the previous block in the blockchain, if any
      */
-    constructor(index, timestamp, data, previousHash = '') {
-        this.index = index
+    constructor(timestamp, transactions, previousHash = '') {
         this.timestamp = timestamp
-        this.data = data
+        this.transactions = transactions
         this.previousHash = previousHash
         this.hash = this.calculateHash()
         this.nonce = 0 // random value used to calculate the block hash, so that every time we calculate the hash, a different value is given
@@ -25,15 +23,11 @@ class Block {
      */
     calculateHash() {
         const hash = SHA256(
-            this.index +
             this.previousHash + 
             this.timestamp +
-            JSON.stringify(this.data) +
+            JSON.stringify(this.transactions) +
             this.nonce
         ).toString()
-
-        // increment nonce; this way next time we compute the hash, we will get a different value
-        this.nonce++
 
         return hash
     }
@@ -45,9 +39,21 @@ class Block {
      */
     mineBlock(difficulty) {
         while (this.hash.substring(0, difficulty) !== Array(difficulty + 1).join("0")) {
+            // increment nonce; this way next time we compute the hash, we will get a different value
+            this.nonce++
             this.hash = this.calculateHash()
         }
         console.log(`Block mined: ${this.hash}`)
+    }
+
+    /**
+     * Method that checks if every transaction in the block is valid or not.
+     */
+    hasValidTransactions() {
+        for (const transaction of this.transactions) {
+            if (!transaction.isValid()) return false
+        }
+        return true
     }
 }
 

@@ -1,26 +1,33 @@
-const Block = require('./block')
 const Blockchain = require('./blockchain')
+const Transaction = require('./transaction')
+const EC = require('elliptic').ec
+const ec = new EC('secp256k1')
+
+// create private (secret) key
+const myKey = ec.keyFromPrivate('5e5f01fcb73d1ea35b7cf25b285c7ceb01f8ba729a9e7316fcf0d7f75351db5d')
+// create public key
+const myWalletAddress = myKey.getPublic('hex')
+
 
 // creating new empty blockchain
 let streamCoin = new Blockchain()
 
-// adding and mining new blocks
-console.log('Mining block 1...')
-streamCoin.addBlock(new Block(1, "02/01/2020", { amount: 4 }))
-console.log('Mining block 2...')
-streamCoin.addBlock(new Block(2, "03/01/2020", { amount: 10 }))
+// create and add transaction
+const tx1 = new Transaction(myWalletAddress, 'another_public_key', 10)
+tx1.signTransaction(myKey)
+streamCoin.addTransaction(tx1)
 
-// printing content
-streamCoin.printContent()
+// mine block to include transactions in blockchain
+streamCoin.minePendingTransactions(myWalletAddress)
 
-// checking the validity of the blockchain
-let valid = streamCoin.isChainValid() ? 'The chain is valid' : 'The chain is not valid'
-console.log(valid)
+// check my address
+console.log(`Balance of edu is: ${streamCoin.getAddressBalance(myWalletAddress)}`)
 
-// try to tamper with the blockchain
-streamCoin.chain[1].data = { amount: 100 }
-streamCoin.chain[1].hash = streamCoin.chain[1].calculateHash()
+// check if chain is valid
+console.log(`Is chain valid? ${streamCoin.isChainValid()}`)
 
-// checking validity again
-valid = streamCoin.isChainValid() ? 'The chain is valid' : 'The chain is not valid'
-console.log(valid)
+// try to tamper with the chain; changing transaction amount from 10 to 1
+streamCoin.chain[1].transactions[0].amount = 1
+
+// check again if chain is valid
+console.log(`Is chain valid? ${streamCoin.isChainValid()}`)
